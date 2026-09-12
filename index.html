@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E3B3C">
+<title>Điều Phối PVT</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root {
+    --petrol-900: #0E3B3C;
+    --petrol-700: #1B5556;
+    --paper: #FAF6EF;
+    --ink: #20211D;
+    --ink-soft: #6B6D64;
+    --amber: #E8A33D;
+    --amber-deep: #B9791C;
+    --alert: #B23A2E;
+    --ok: #4C7A5E;
+    --line: #E3DDCF;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); height: 100%; overscroll-behavior-y: contain;
+  }
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+
+  header {
+    background: var(--petrol-900); color: var(--paper);
+    padding: env(safe-area-inset-top, 0) 18px 14px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .head-row { display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: baseline; gap: 8px; }
+  .brand-mark { font-family: var(--mono); font-size: 13px; letter-spacing: 0.06em; color: var(--amber); }
+  h1 { font-size: 19px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block; margin-right: 6px; flex-shrink: 0; }
+  .status-dot.off { background: var(--alert); }
+  .conn { display: flex; align-items: center; font-family: var(--mono); font-size: 11px; color: rgba(250,246,239,0.75); }
+
+  #installBtn {
+    display: none; margin-top: 12px; width: 100%;
+    background: var(--amber); color: var(--petrol-900); border: none;
+    font-family: var(--sans); font-weight: 600; font-size: 14px;
+    padding: 11px; border-radius: 3px; cursor: pointer;
+  }
+  #installBtn:active { background: var(--amber-deep); }
+
+  .tabs { display: flex; gap: 2px; margin-top: 14px; }
+  .tab {
+    flex: 1; text-align: center; padding: 9px 0; font-size: 13px; font-weight: 600;
+    color: rgba(250,246,239,0.55); border-bottom: 2px solid transparent; cursor: pointer;
+  }
+  .tab.active { color: var(--paper); border-bottom-color: var(--amber); }
+  .tab .count { font-family: var(--mono); font-weight: 400; opacity: 0.8; }
+
+  main { flex: 1; padding-bottom: 40px; }
+  .empty { padding: 60px 24px; text-align: center; color: var(--ink-soft); font-size: 14px; }
+
+  .ticket { border-bottom: 1px solid var(--line); display: flex; }
+  .rail { width: 4px; flex-shrink: 0; }
+  .rail.wait { background: var(--petrol-700); }
+  .rail.doing { background: var(--amber); }
+  .rail.overdue { background: var(--alert); }
+  .rail.done { background: var(--ok); }
+
+  .ticket-body { flex: 1; padding: 13px 16px; }
+  .ticket-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .ticket-id { font-family: var(--mono); font-size: 11px; color: var(--ink-soft); letter-spacing: 0.02em; }
+  .elapsed { font-family: var(--mono); font-size: 11px; flex-shrink: 0; }
+  .elapsed.overdue { color: var(--alert); font-weight: 600; }
+  .elapsed.doing { color: var(--amber-deep); }
+  .elapsed.wait { color: var(--ink-soft); }
+  .elapsed.done { color: var(--ok); }
+
+  .cust { font-size: 15.5px; font-weight: 600; margin-top: 3px; }
+  .subline { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+
+  .detail { padding: 0 16px 16px; display: none; }
+  .detail.open { display: block; }
+  .detail-grid { font-size: 13px; line-height: 1.7; color: var(--ink); border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 4px; }
+  .detail-grid b { color: var(--ink-soft); font-weight: 500; }
+
+  .action-btn {
+    margin-top: 12px; width: 100%; padding: 11px; border: none; border-radius: 3px;
+    background: var(--petrol-900); color: var(--paper); font-family: var(--sans);
+    font-weight: 600; font-size: 14px; cursor: pointer;
+  }
+  .action-btn:active { background: var(--petrol-700); }
+  .action-btn.disabled { background: var(--line); color: var(--ink-soft); }
+
+  .toast {
+    position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom,0px) + 16px);
+    background: var(--ink); color: var(--paper); padding: 12px 16px; border-radius: 4px;
+    font-size: 13.5px; text-align: center; opacity: 0; transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  footer {
+    padding: 16px 20px calc(env(safe-area-inset-bottom,0px) + 16px);
+    font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); text-align: center;
+    border-top: 1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-row">
+    <div class="brand">
+      <span class="brand-mark">PVT/</span>
+      <h1>Điều Phối</h1>
+    </div>
+    <div class="conn"><span class="status-dot" id="statusDot"></span><span id="statusText">Trực tuyến</span></div>
+  </div>
+
+  <button id="installBtn">⬇ Cài vào màn hình chính</button>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="kenhmoi">Kênh mới <span class="count" id="countKenhMoi"></span></div>
+    <div class="tab" data-tab="pakh">PAKH <span class="count" id="countPakh"></span></div>
+  </div>
+</header>
+
+<main id="list"></main>
+
+<footer>Dữ liệu mẫu · Hoạt động cả khi mất mạng</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+  // ==== Dữ liệu mẫu (mô phỏng — thực tế sẽ lấy từ API/Sheets) ====
+  const DATA = {
+    kenhmoi: [
+      { id: 'New260828-0912-tranVanC', ten: 'Trần Văn C', xa: 'Xã Mỹ Phong', kenh: 'GPON Mobi', trangThai: 'Chờ QLKV chốt kết quả', urgency: 'overdue', elapsed: '52p', nguoiCho: 'QLKV', maKenh: '—', doiTac: 'HPT (Kháng)' },
+      { id: 'New260828-1030-leThiD',   ten: 'Lê Thị D',   xa: 'Phường 1',     kenh: 'Toàn trình', trangThai: 'Chờ ĐT khảo sát', urgency: 'doing', elapsed: '18p', nguoiCho: 'HPT', maKenh: '—', doiTac: 'HPT (Kháng)' },
+      { id: 'New260828-1102-vuMinhE',  ten: 'Vũ Minh E',  xa: 'Xã Bình Xuân', kenh: 'GPON Mobi', trangThai: 'Chờ KD gửi /TTKH', urgency: 'wait', elapsed: '4p', nguoiCho: 'KD', maKenh: '—', doiTac: 'HPT (Kháng)' }
+    ],
+    pakh: [
+      { id: 'PAKH260828-0845-nguyenVanA', ten: 'Nguyễn Văn A', maKenh: '0059181977', loi: 'Không vô mạng được', trangThai: 'Chờ ĐT khắc phục', urgency: 'overdue', elapsed: '2h15p', nguoiCho: 'TMC', doiTac: 'TMC (Cảnh)' },
+      { id: 'PAKH260828-0930-phamThiB',   ten: 'Phạm Thị B',   maKenh: '0033012456', loi: 'Rớt mạng liên tục buổi tối', trangThai: 'Chờ QLKV xác nhận', urgency: 'doing', elapsed: '25p', nguoiCho: 'QLKV', doiTac: 'HPT (Kháng)' }
+    ]
+  };
+
+  let activeTab = 'kenhmoi';
+  let openId = null;
+
+  function urgencyLabel(u) {
+    return { wait: 'Bình thường', doing: 'Đang xử lý', overdue: 'Quá hạn', done: 'Hoàn tất' }[u] || '';
+  }
+
+  function renderKenhMoi(item) {
+    return `
+      <div class="ticket">
+        <div class="rail ${item.urgency}"></div>
+        <div style="flex:1">
+          <div class="ticket-body" onclick="toggle('${item.id}')">
+            <div class="ticket-top">
+              <span class="ticket-id">${item.id}</span>
+              <span class="elapsed ${item.urgency}">${item.elapsed} · chờ ${item.nguoiCho}</span>
+            </div>
+            <div class="cust">${item.ten}</div>
+            <div class="subline">${item.xa} · ${item.kenh} · ${item.trangThai}</div>
+          </div>
+          <div class="detail ${openId === item.id ? 'open' : ''}" id="d-${item.id}">
+            <div class="detail-grid">
+              <div><b>Đối tác:</b> ${item.doiTac}</div>
+              <div><b>Mã kênh:</b> ${item.maKenh}</div>
+              <div><b>Trạng thái:</b> ${item.trangThai} (${urgencyLabel(item.urgency)})</div>
+            </div>
+            <button class="action-btn" onclick="event.stopPropagation(); act('${item.ten}')">Tiếp nhận / Xử lý tiếp</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderPakh(item) {
+    return `
+      <div class="ticket">
+        <div class="rail ${item.urgency}"></div>
+        <div style="flex:1">
+          <div class="ticket-body" onclick="toggle('${item.id}')">
+            <div class="ticket-top">
+              <span class="ticket-id">${item.id}</span>
+              <span class="elapsed ${item.urgency}">${item.elapsed} · chờ ${item.nguoiCho}</span>
+            </div>
+            <div class="cust">${item.ten}</div>
+            <div class="subline">Mã kênh ${item.maKenh} · ${item.loi}</div>
+          </div>
+          <div class="detail ${openId === item.id ? 'open' : ''}" id="d-${item.id}">
+            <div class="detail-grid">
+              <div><b>Đối tác:</b> ${item.doiTac}</div>
+              <div><b>Lỗi:</b> ${item.loi}</div>
+              <div><b>Trạng thái:</b> ${item.trangThai} (${urgencyLabel(item.urgency)})</div>
+            </div>
+            <button class="action-btn" onclick="event.stopPropagation(); act('${item.ten}')">Tiếp nhận / Xử lý tiếp</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function render() {
+    const list = document.getElementById('list');
+    const items = DATA[activeTab];
+    document.getElementById('countKenhMoi').textContent = '(' + DATA.kenhmoi.length + ')';
+    document.getElementById('countPakh').textContent = '(' + DATA.pakh.length + ')';
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
+
+    if (!items.length) {
+      list.innerHTML = '<div class="empty">Không có việc nào đang chờ.</div>';
+      return;
+    }
+    list.innerHTML = items.map(activeTab === 'kenhmoi' ? renderKenhMoi : renderPakh).join('');
+  }
+
+  function toggle(id) {
+    openId = openId === id ? null : id;
+    render();
+  }
+
+  function act(ten) {
+    showToast('Đã ghi nhận thao tác cho ' + ten + ' (bản mẫu — chưa nối API thật)');
+  }
+
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => { activeTab = t.dataset.tab; openId = null; render(); });
+  });
+
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2600);
+  }
+
+  // ==== Trạng thái online/offline ====
+  function updateConn() {
+    const online = navigator.onLine;
+    document.getElementById('statusDot').classList.toggle('off', !online);
+    document.getElementById('statusText').textContent = online ? 'Trực tuyến' : 'Ngoại tuyến (offline)';
+  }
+  window.addEventListener('online', updateConn);
+  window.addEventListener('offline', updateConn);
+
+  // ==== Cài đặt PWA (Add to Home Screen) ====
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installBtn').style.display = 'block';
+  });
+  document.getElementById('installBtn').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    document.getElementById('installBtn').style.display = 'none';
+  });
+  window.addEventListener('appinstalled', () => showToast('Đã cài đặt ứng dụng thành công'));
+
+  // ==== Đăng ký Service Worker (chạy được cả khi mất mạng) ====
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+    });
+  }
+
+  updateConn();
+  render();
+</script>
+</body>
+</html>
