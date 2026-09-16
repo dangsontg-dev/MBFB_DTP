@@ -9,6 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   :root {
     --petrol-900: #0E3B3C;
@@ -43,6 +44,7 @@
   h1 { font-size: 19px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
   .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block; margin-right: 6px; flex-shrink: 0; }
   .status-dot.off { background: var(--alert); }
+  .status-dot.stale { background: var(--amber); }
   .conn { display: flex; align-items: center; font-family: var(--mono); font-size: 11px; color: rgba(250,246,239,0.75); }
 
   #installBtn {
@@ -63,6 +65,11 @@
 
   main { flex: 1; padding-bottom: 40px; }
   .empty { padding: 60px 24px; text-align: center; color: var(--ink-soft); font-size: 14px; }
+  .config-warn {
+    margin: 16px; padding: 14px; border: 1px dashed var(--amber-deep); border-radius: 4px;
+    font-size: 12.5px; line-height: 1.6; color: var(--ink-soft); background: #FBF2E0;
+  }
+  .config-warn b { color: var(--ink); }
 
   .ticket { border-bottom: 1px solid var(--line); display: flex; }
   .rail { width: 4px; flex-shrink: 0; }
@@ -94,7 +101,6 @@
     font-weight: 600; font-size: 14px; cursor: pointer;
   }
   .action-btn:active { background: var(--petrol-700); }
-  .action-btn.disabled { background: var(--line); color: var(--ink-soft); }
 
   .toast {
     position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom,0px) + 16px);
@@ -109,6 +115,19 @@
     font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); text-align: center;
     border-top: 1px solid var(--line);
   }
+
+  /* ---- Tab Thống kê ---- */
+  .stats-pad { padding: 16px; }
+  .kpi-row { display: flex; gap: 10px; margin-bottom: 18px; }
+  .kpi {
+    flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 4px;
+    padding: 12px 10px; text-align: center;
+  }
+  .kpi .num { font-family: var(--mono); font-size: 24px; font-weight: 700; color: var(--petrol-900); }
+  .kpi .lbl { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .chart-block { margin-bottom: 26px; }
+  .chart-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 10px; }
+  .chart-wrap { background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 14px 10px; height: 190px; }
 </style>
 </head>
 <body>
@@ -119,7 +138,7 @@
       <span class="brand-mark">PVT/</span>
       <h1>Điều Phối</h1>
     </div>
-    <div class="conn"><span class="status-dot" id="statusDot"></span><span id="statusText">Trực tuyến</span></div>
+    <div class="conn"><span class="status-dot" id="statusDot"></span><span id="statusText">Đang tải…</span></div>
   </div>
 
   <button id="installBtn">⬇ Cài vào màn hình chính</button>
@@ -127,31 +146,53 @@
   <div class="tabs">
     <div class="tab active" data-tab="kenhmoi">Kênh mới <span class="count" id="countKenhMoi"></span></div>
     <div class="tab" data-tab="pakh">PAKH <span class="count" id="countPakh"></span></div>
+    <div class="tab" data-tab="thongke">Thống kê</div>
   </div>
 </header>
 
 <main id="list"></main>
 
-<footer>Dữ liệu mẫu · Hoạt động cả khi mất mạng</footer>
+<footer id="footerNote">Kết nối dữ liệu thật · Chỉ xem, thao tác vẫn qua Telegram</footer>
 <div class="toast" id="toast"></div>
 
 <script>
-  // ==== Dữ liệu mẫu (mô phỏng — thực tế sẽ lấy từ API/Sheets) ====
-  const DATA = {
-    kenhmoi: [
-      { id: 'New260828-0912-tranVanC', ten: 'Trần Văn C', xa: 'Xã Mỹ Phong', kenh: 'GPON Mobi', trangThai: 'Chờ QLKV chốt kết quả', urgency: 'overdue', elapsed: '52p', nguoiCho: 'QLKV', maKenh: '—', doiTac: 'HPT (Kháng)' },
-      { id: 'New260828-1030-leThiD',   ten: 'Lê Thị D',   xa: 'Phường 1',     kenh: 'Toàn trình', trangThai: 'Chờ ĐT khảo sát', urgency: 'doing', elapsed: '18p', nguoiCho: 'HPT', maKenh: '—', doiTac: 'HPT (Kháng)' },
-      { id: 'New260828-1102-vuMinhE',  ten: 'Vũ Minh E',  xa: 'Xã Bình Xuân', kenh: 'GPON Mobi', trangThai: 'Chờ KD gửi /TTKH', urgency: 'wait', elapsed: '4p', nguoiCho: 'KD', maKenh: '—', doiTac: 'HPT (Kháng)' }
-    ],
-    pakh: [
-      { id: 'PAKH260828-0845-nguyenVanA', ten: 'Nguyễn Văn A', maKenh: '0059181977', loi: 'Không vô mạng được', trangThai: 'Chờ ĐT khắc phục', urgency: 'overdue', elapsed: '2h15p', nguoiCho: 'TMC', doiTac: 'TMC (Cảnh)' },
-      { id: 'PAKH260828-0930-phamThiB',   ten: 'Phạm Thị B',   maKenh: '0033012456', loi: 'Rớt mạng liên tục buổi tối', trangThai: 'Chờ QLKV xác nhận', urgency: 'doing', elapsed: '25p', nguoiCho: 'QLKV', doiTac: 'HPT (Kháng)' }
-    ]
+  // ============================================================
+  // CẤU HÌNH KẾT NỐI — Sơn dán URL Web App + Key vào đây sau khi deploy
+  // ============================================================
+  const API_CONFIG = {
+    url: 'https://script.google.com/macros/s/AKfycbxhwStVgHoTat7MxIh0yf-KUtORWlKpC8RFkspyfYPDvkvdD7m9MGstVIJvNXTdSrUU-Q/exec',   // VD: https://script.google.com/macros/s/AKfycb.../exec
+    key: 'pvt20262k9'    // đúng giá trị đã điền ở dòng PWA_API_KEY trong sheet Config
   };
+  const CHUA_CAU_HINH = API_CONFIG.url.indexOf('DÁN_URL') === 0;
 
   let activeTab = 'kenhmoi';
   let openId = null;
+  let liveData = { kenhmoi: [], pakh: [] };
+  let liveStats = null;
+  let charts = {};
 
+  // ==== Dữ liệu mẫu — chỉ dùng khi CHƯA cấu hình API (để xem trước giao diện) ====
+  const DEMO_DATA = {
+    kenhmoi: [
+      { id: 'New260828-0912-tranVanC', ten: 'Trần Văn C', xa: 'Xã Mỹ Phong', kenh: 'GPON Mobi', trangThai: 'Chờ QLKV chốt kết quả', urgency: 'overdue', elapsedMin: 52, nguoiCho: 'QLKV', doiTac: 'HPT' },
+      { id: 'New260828-1030-leThiD',   ten: 'Lê Thị D',   xa: 'Phường 1',     kenh: 'Toàn trình', trangThai: 'Chờ ĐT khảo sát', urgency: 'doing', elapsedMin: 18, nguoiCho: 'HPT', doiTac: 'HPT' }
+    ],
+    pakh: [
+      { id: 'PAKH260828-0845-nguyenVanA', ten: 'Nguyễn Văn A', maKenh: '0059181977', loi: 'Không vô mạng được', trangThai: 'Chờ ĐT khắc phục', urgency: 'overdue', elapsedMin: 135, nguoiCho: 'TMC', doiTac: 'TMC' }
+    ]
+  };
+  const DEMO_STATS = {
+    tongDangXuLy: 3, soKenhMoi: 2, soPAKH: 1,
+    theoKhan: { wait: 0, doing: 1, overdue: 2 },
+    theoDoiTac: { HPT: 2, TMC: 1 },
+    hoanThanh7Ngay: { '05/09':1,'06/09':2,'07/09':0,'08/09':3,'09/09':1,'10/09':2,'11/09':1 }
+  };
+
+  function fmtElapsed(min) {
+    if (min === null || min === undefined) return '—';
+    if (min < 60) return min + 'p';
+    return Math.floor(min / 60) + 'h' + (min % 60) + 'p';
+  }
   function urgencyLabel(u) {
     return { wait: 'Bình thường', doing: 'Đang xử lý', overdue: 'Quá hạn', done: 'Hoàn tất' }[u] || '';
   }
@@ -164,18 +205,17 @@
           <div class="ticket-body" onclick="toggle('${item.id}')">
             <div class="ticket-top">
               <span class="ticket-id">${item.id}</span>
-              <span class="elapsed ${item.urgency}">${item.elapsed} · chờ ${item.nguoiCho}</span>
+              <span class="elapsed ${item.urgency}">${fmtElapsed(item.elapsedMin)} · chờ ${item.nguoiCho || '—'}</span>
             </div>
-            <div class="cust">${item.ten}</div>
-            <div class="subline">${item.xa} · ${item.kenh} · ${item.trangThai}</div>
+            <div class="cust">${item.ten || '(chưa rõ)'}</div>
+            <div class="subline">${item.xa || ''} · ${item.kenh || ''} · ${item.trangThai || ''}</div>
           </div>
           <div class="detail ${openId === item.id ? 'open' : ''}" id="d-${item.id}">
             <div class="detail-grid">
-              <div><b>Đối tác:</b> ${item.doiTac}</div>
-              <div><b>Mã kênh:</b> ${item.maKenh}</div>
-              <div><b>Trạng thái:</b> ${item.trangThai} (${urgencyLabel(item.urgency)})</div>
+              <div><b>Đối tác:</b> ${item.doiTac || '—'}</div>
+              <div><b>Trạng thái:</b> ${item.trangThai || ''} (${urgencyLabel(item.urgency)})</div>
             </div>
-            <button class="action-btn" onclick="event.stopPropagation(); act('${item.ten}')">Tiếp nhận / Xử lý tiếp</button>
+            <button class="action-btn" onclick="event.stopPropagation(); act()">Xem chi tiết trên Telegram</button>
           </div>
         </div>
       </div>`;
@@ -189,44 +229,112 @@
           <div class="ticket-body" onclick="toggle('${item.id}')">
             <div class="ticket-top">
               <span class="ticket-id">${item.id}</span>
-              <span class="elapsed ${item.urgency}">${item.elapsed} · chờ ${item.nguoiCho}</span>
+              <span class="elapsed ${item.urgency}">${fmtElapsed(item.elapsedMin)} · chờ ${item.nguoiCho || '—'}</span>
             </div>
-            <div class="cust">${item.ten}</div>
-            <div class="subline">Mã kênh ${item.maKenh} · ${item.loi}</div>
+            <div class="cust">${item.ten || '(chưa rõ)'}</div>
+            <div class="subline">Mã kênh ${item.maKenh || '—'} · ${item.loi || ''}</div>
           </div>
           <div class="detail ${openId === item.id ? 'open' : ''}" id="d-${item.id}">
             <div class="detail-grid">
-              <div><b>Đối tác:</b> ${item.doiTac}</div>
-              <div><b>Lỗi:</b> ${item.loi}</div>
-              <div><b>Trạng thái:</b> ${item.trangThai} (${urgencyLabel(item.urgency)})</div>
+              <div><b>Đối tác:</b> ${item.doiTac || '—'}</div>
+              <div><b>Trạng thái:</b> ${item.trangThai || ''} (${urgencyLabel(item.urgency)})</div>
             </div>
-            <button class="action-btn" onclick="event.stopPropagation(); act('${item.ten}')">Tiếp nhận / Xử lý tiếp</button>
+            <button class="action-btn" onclick="event.stopPropagation(); act()">Xem chi tiết trên Telegram</button>
           </div>
         </div>
       </div>`;
   }
 
-  function render() {
+  function renderList() {
     const list = document.getElementById('list');
-    const items = DATA[activeTab];
-    document.getElementById('countKenhMoi').textContent = '(' + DATA.kenhmoi.length + ')';
-    document.getElementById('countPakh').textContent = '(' + DATA.pakh.length + ')';
-    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
+    const items = liveData[activeTab] || [];
+    document.getElementById('countKenhMoi').textContent = '(' + (liveData.kenhmoi || []).length + ')';
+    document.getElementById('countPakh').textContent = '(' + (liveData.pakh || []).length + ')';
 
     if (!items.length) {
-      list.innerHTML = '<div class="empty">Không có việc nào đang chờ.</div>';
+      list.innerHTML = '<div class="empty">Không có việc nào đang chờ 🎉</div>';
       return;
     }
     list.innerHTML = items.map(activeTab === 'kenhmoi' ? renderKenhMoi : renderPakh).join('');
   }
 
-  function toggle(id) {
-    openId = openId === id ? null : id;
-    render();
+  function renderStats() {
+    const list = document.getElementById('list');
+    const s = liveStats || DEMO_STATS;
+    list.innerHTML = `
+      <div class="stats-pad">
+        <div class="kpi-row">
+          <div class="kpi"><div class="num">${s.tongDangXuLy}</div><div class="lbl">Đang xử lý</div></div>
+          <div class="kpi"><div class="num">${s.soKenhMoi}</div><div class="lbl">Kênh mới</div></div>
+          <div class="kpi"><div class="num">${s.soPAKH}</div><div class="lbl">PAKH</div></div>
+        </div>
+
+        <div class="chart-block">
+          <div class="chart-title">Theo mức độ khẩn cấp</div>
+          <div class="chart-wrap"><canvas id="chartKhan"></canvas></div>
+        </div>
+
+        <div class="chart-block">
+          <div class="chart-title">Theo đối tác đang phụ trách</div>
+          <div class="chart-wrap"><canvas id="chartDoiTac"></canvas></div>
+        </div>
+
+        <div class="chart-block">
+          <div class="chart-title">Kênh mới hoàn tất — 7 ngày gần nhất</div>
+          <div class="chart-wrap"><canvas id="chart7Ngay"></canvas></div>
+        </div>
+      </div>`;
+    drawCharts(s);
   }
 
-  function act(ten) {
-    showToast('Đã ghi nhận thao tác cho ' + ten + ' (bản mẫu — chưa nối API thật)');
+  function destroyCharts() {
+    Object.values(charts).forEach(c => c && c.destroy());
+    charts = {};
+  }
+
+  function drawCharts(s) {
+    destroyCharts();
+    if (typeof Chart === 'undefined') return; // Chart.js chưa tải kịp (offline lần đầu) -> bỏ qua, không lỗi
+
+    const palette = { wait: '#1B5556', doing: '#E8A33D', overdue: '#B23A2E' };
+    charts.khan = new Chart(document.getElementById('chartKhan'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Bình thường', 'Đang xử lý', 'Quá hạn'],
+        datasets: [{ data: [s.theoKhan.wait||0, s.theoKhan.doing||0, s.theoKhan.overdue||0],
+          backgroundColor: [palette.wait, palette.doing, palette.overdue], borderWidth: 0 }]
+      },
+      options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } }, maintainAspectRatio: false }
+    });
+
+    const dtLabels = Object.keys(s.theoDoiTac || {});
+    charts.doiTac = new Chart(document.getElementById('chartDoiTac'), {
+      type: 'bar',
+      data: { labels: dtLabels, datasets: [{ data: dtLabels.map(k => s.theoDoiTac[k]), backgroundColor: '#0E3B3C', borderRadius: 3 }] },
+      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: false }
+    });
+
+    const ngayLabels = Object.keys(s.hoanThanh7Ngay || {});
+    charts.ngay = new Chart(document.getElementById('chart7Ngay'), {
+      type: 'bar',
+      data: { labels: ngayLabels, datasets: [{ data: ngayLabels.map(k => s.hoanThanh7Ngay[k]), backgroundColor: '#E8A33D', borderRadius: 3 }] },
+      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: false }
+    });
+  }
+
+  function render() {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
+    if (activeTab === 'thongke') renderStats();
+    else renderList();
+  }
+
+  function toggle(id) {
+    openId = openId === id ? null : id;
+    renderList();
+  }
+
+  function act() {
+    showToast('Mở Telegram để thao tác thật — PWA hiện chỉ để xem tình hình nhanh');
   }
 
   document.querySelectorAll('.tab').forEach(t => {
@@ -240,14 +348,60 @@
     setTimeout(() => el.classList.remove('show'), 2600);
   }
 
-  // ==== Trạng thái online/offline ====
-  function updateConn() {
-    const online = navigator.onLine;
-    document.getElementById('statusDot').classList.toggle('off', !online);
-    document.getElementById('statusText').textContent = online ? 'Trực tuyến' : 'Ngoại tuyến (offline)';
+  // ==== Lấy dữ liệu thật từ Apps Script Web App (kèm cache tạm để dùng khi mất mạng) ====
+  async function taiDuLieu() {
+    if (CHUA_CAU_HINH) {
+      liveData = DEMO_DATA; liveStats = DEMO_STATS;
+      document.getElementById('footerNote').textContent = 'Chưa cấu hình API — đang hiện dữ liệu mẫu';
+      showConfigWarning();
+      render();
+      updateConn('demo');
+      return;
+    }
+    try {
+      const [resActive, resStats] = await Promise.all([
+        fetch(API_CONFIG.url + '?action=active&key=' + encodeURIComponent(API_CONFIG.key)),
+        fetch(API_CONFIG.url + '?action=summary&key=' + encodeURIComponent(API_CONFIG.key))
+      ]);
+      const active = await resActive.json();
+      const stats = await resStats.json();
+      if (active.error || stats.error) throw new Error(active.error || stats.error);
+
+      liveData = active; liveStats = stats;
+      localStorage.setItem('dieuphoi_cache', JSON.stringify({ active, stats, luc: Date.now() }));
+      updateConn('online');
+    } catch (err) {
+      const cached = localStorage.getItem('dieuphoi_cache');
+      if (cached) {
+        const c = JSON.parse(cached);
+        liveData = c.active; liveStats = c.stats;
+        updateConn('stale', c.luc);
+      } else {
+        updateConn('off');
+      }
+    }
+    render();
   }
-  window.addEventListener('online', updateConn);
-  window.addEventListener('offline', updateConn);
+
+  function showConfigWarning() {
+    const list = document.getElementById('list');
+    list.insertAdjacentHTML('afterbegin',
+      `<div class="config-warn"><b>Chưa kết nối dữ liệu thật.</b> Sơn cần dán URL Web App + Key vào phần
+      <code>API_CONFIG</code> đầu file index.html (xem hướng dẫn kèm theo). Đang hiện dữ liệu mẫu bên dưới.</div>`);
+  }
+
+  function updateConn(mode, staleTime) {
+    const dot = document.getElementById('statusDot');
+    const txt = document.getElementById('statusText');
+    dot.className = 'status-dot';
+    if (mode === 'online') { txt.textContent = 'Đã cập nhật'; }
+    else if (mode === 'demo') { dot.classList.add('stale'); txt.textContent = 'Dữ liệu mẫu'; }
+    else if (mode === 'stale') {
+      dot.classList.add('stale');
+      const mins = Math.round((Date.now() - staleTime) / 60000);
+      txt.textContent = 'Ngoại tuyến · dữ liệu ' + mins + 'p trước';
+    } else { dot.classList.add('off'); txt.textContent = 'Không tải được dữ liệu'; }
+  }
 
   // ==== Cài đặt PWA (Add to Home Screen) ====
   let deferredPrompt = null;
@@ -272,8 +426,8 @@
     });
   }
 
-  updateConn();
-  render();
+  taiDuLieu();
+  setInterval(taiDuLieu, 60000); // tự làm mới mỗi 1 phút khi app đang mở
 </script>
 </body>
 </html>
