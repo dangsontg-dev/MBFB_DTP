@@ -9,98 +9,86 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   :root {
-    --petrol-900: #0E3B3C;
-    --petrol-700: #1B5556;
-    --paper: #FAF6EF;
-    --ink: #20211D;
-    --ink-soft: #6B6D64;
-    --amber: #E8A33D;
-    --amber-deep: #B9791C;
-    --alert: #B23A2E;
-    --ok: #4C7A5E;
-    --line: #E3DDCF;
+    --petrol-900: #0E3B3C; --petrol-700: #1B5556; --paper: #FAF6EF;
+    --ink: #20211D; --ink-soft: #6B6D64; --amber: #E8A33D; --amber-deep: #B9791C;
+    --alert: #B23A2E; --ok: #4C7A5E; --line: #E3DDCF;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
     --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    margin: 0; padding: 0; background: var(--paper); color: var(--ink);
-    font-family: var(--sans); height: 100%; overscroll-behavior-y: contain;
-  }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); height: 100%; }
   body { display: flex; flex-direction: column; min-height: 100vh; }
 
-  header {
-    background: var(--petrol-900); color: var(--paper);
-    padding: env(safe-area-inset-top, 0) 18px 14px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
-    position: sticky; top: 0; z-index: 10;
-  }
+  header { background: var(--petrol-900); color: var(--paper); padding: calc(env(safe-area-inset-top,0px) + 16px) 18px 14px; position: sticky; top: 0; z-index: 10; }
   .head-row { display: flex; align-items: center; justify-content: space-between; }
-  .brand { display: flex; align-items: baseline; gap: 8px; }
+  .brand { display: flex; align-items: baseline; gap: 8px; cursor: pointer; }
   .brand-mark { font-family: var(--mono); font-size: 13px; letter-spacing: 0.06em; color: var(--amber); }
-  h1 { font-size: 19px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block; margin-right: 6px; flex-shrink: 0; }
-  .status-dot.off { background: var(--alert); }
-  .status-dot.stale { background: var(--amber); }
-  .conn { display: flex; align-items: center; font-family: var(--mono); font-size: 11px; color: rgba(250,246,239,0.75); }
-
-  #installBtn {
-    display: none; margin-top: 12px; width: 100%;
-    background: var(--amber); color: var(--petrol-900); border: none;
-    font-family: var(--sans); font-weight: 600; font-size: 14px;
-    padding: 11px; border-radius: 3px; cursor: pointer;
-  }
-  #installBtn:active { background: var(--amber-deep); }
-
-  .tabs { display: flex; gap: 2px; margin-top: 14px; }
-  .tab {
-    flex: 1; text-align: center; padding: 9px 0; font-size: 13px; font-weight: 600;
-    color: rgba(250,246,239,0.55); border-bottom: 2px solid transparent; cursor: pointer;
-  }
-  .tab.active { color: var(--paper); border-bottom-color: var(--amber); }
-  .tab .count { font-family: var(--mono); font-weight: 400; opacity: 0.8; }
+  h1 { font-size: 19px; font-weight: 600; margin: 0; }
+  .who { font-family: var(--mono); font-size: 11px; color: rgba(250,246,239,0.75); text-align: right; max-width: 55%; line-height: 1.5; }
+  .who b { color: var(--paper); }
 
   main { flex: 1; padding-bottom: 40px; }
+  .pad { padding: 16px; }
   .empty { padding: 60px 24px; text-align: center; color: var(--ink-soft); font-size: 14px; }
-  .config-warn {
-    margin: 16px; padding: 14px; border: 1px dashed var(--amber-deep); border-radius: 4px;
-    font-size: 12.5px; line-height: 1.6; color: var(--ink-soft); background: #FBF2E0;
+
+  /* ---- Login ---- */
+  .login-wrap { padding: 60px 24px; text-align: center; }
+  .login-wrap h2 { font-size: 17px; margin-bottom: 6px; }
+  .login-wrap p { font-size: 13px; color: var(--ink-soft); margin-bottom: 20px; }
+
+  /* ---- Form chung ---- */
+  label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); margin: 14px 0 5px; }
+  label.req::after { content: ' *'; color: var(--alert); }
+  input[type=text], input[type=tel], input[type=number], select, textarea {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 4px;
+    font-family: var(--sans); font-size: 15px; background: #fff; color: var(--ink);
   }
-  .config-warn b { color: var(--ink); }
+  textarea { resize: vertical; min-height: 60px; }
+  .hint { font-size: 11.5px; color: var(--ink-soft); margin-top: 4px; }
+  .btn {
+    width: 100%; padding: 12px; border: none; border-radius: 4px; font-family: var(--sans);
+    font-weight: 600; font-size: 14.5px; cursor: pointer; margin-top: 14px;
+  }
+  .btn-primary { background: var(--petrol-900); color: var(--paper); }
+  .btn-primary:active { background: var(--petrol-700); }
+  .btn-amber { background: var(--amber); color: var(--petrol-900); }
+  .btn-amber:active { background: var(--amber-deep); }
+  .btn-danger { background: #fff; color: var(--alert); border: 1px solid var(--alert); }
+  .btn-outline { background: #fff; color: var(--petrol-900); border: 1px solid var(--petrol-900); }
+  .btn:disabled { opacity: 0.5; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row .btn { margin-top: 14px; }
 
-  .ticket { border-bottom: 1px solid var(--line); display: flex; }
+  /* ---- Danh sách ---- */
+  .ticket { border-bottom: 1px solid var(--line); display: flex; cursor: pointer; }
   .rail { width: 4px; flex-shrink: 0; }
-  .rail.wait { background: var(--petrol-700); }
-  .rail.doing { background: var(--amber); }
-  .rail.overdue { background: var(--alert); }
-  .rail.done { background: var(--ok); }
-
+  .rail.wait { background: var(--petrol-700); } .rail.doing { background: var(--amber); } .rail.overdue { background: var(--alert); }
   .ticket-body { flex: 1; padding: 13px 16px; }
-  .ticket-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-  .ticket-id { font-family: var(--mono); font-size: 11px; color: var(--ink-soft); letter-spacing: 0.02em; }
-  .elapsed { font-family: var(--mono); font-size: 11px; flex-shrink: 0; }
-  .elapsed.overdue { color: var(--alert); font-weight: 600; }
-  .elapsed.doing { color: var(--amber-deep); }
-  .elapsed.wait { color: var(--ink-soft); }
-  .elapsed.done { color: var(--ok); }
-
+  .ticket-top { display: flex; justify-content: space-between; gap: 10px; }
+  .ticket-id { font-family: var(--mono); font-size: 11px; color: var(--ink-soft); }
+  .elapsed { font-family: var(--mono); font-size: 11px; }
+  .elapsed.overdue { color: var(--alert); font-weight: 600; } .elapsed.doing { color: var(--amber-deep); } .elapsed.wait { color: var(--ink-soft); }
   .cust { font-size: 15.5px; font-weight: 600; margin-top: 3px; }
   .subline { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+  .badge-done { display: inline-block; font-size: 10.5px; background: #E7EFE9; color: var(--ok); padding: 2px 7px; border-radius: 3px; margin-top: 4px; }
 
-  .detail { padding: 0 16px 16px; display: none; }
-  .detail.open { display: block; }
-  .detail-grid { font-size: 13px; line-height: 1.7; color: var(--ink); border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 4px; }
-  .detail-grid b { color: var(--ink-soft); font-weight: 500; }
+  /* ---- Chi tiết ---- */
+  .back-row { display: flex; align-items: center; gap: 8px; padding: 14px 16px 0; font-size: 13px; color: var(--petrol-900); cursor: pointer; }
+  .detail-card { margin: 14px 16px; padding: 14px; background: #fff; border: 1px solid var(--line); border-radius: 4px; }
+  .detail-card .row { font-size: 13.5px; line-height: 1.8; }
+  .detail-card .row b { color: var(--ink-soft); font-weight: 500; }
+  .step-box { margin: 0 16px 16px; padding: 16px; background: #fff; border: 1px solid var(--line); border-radius: 4px; }
+  .step-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .step-sub { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 10px; }
 
-  .action-btn {
-    margin-top: 12px; width: 100%; padding: 11px; border: none; border-radius: 3px;
-    background: var(--petrol-900); color: var(--paper); font-family: var(--sans);
-    font-weight: 600; font-size: 14px; cursor: pointer;
-  }
-  .action-btn:active { background: var(--petrol-700); }
+  .photo-slot { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px dashed var(--line); border-radius: 4px; margin-top: 8px; }
+  .photo-slot img { width: 48px; height: 48px; object-fit: cover; border-radius: 3px; }
+  .photo-slot .ph-info { flex: 1; font-size: 13px; }
+  .photo-slot .ph-status { font-size: 11.5px; color: var(--ink-soft); }
+  .photo-slot .ph-status.done { color: var(--ok); }
+  .photo-slot button { padding: 7px 12px; border-radius: 3px; border: 1px solid var(--petrol-900); background: #fff; color: var(--petrol-900); font-size: 12.5px; }
 
   .toast {
     position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom,0px) + 16px);
@@ -109,50 +97,26 @@
     transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 50;
   }
   .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.err { background: var(--alert); }
 
-  footer {
-    padding: 16px 20px calc(env(safe-area-inset-bottom,0px) + 16px);
-    font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); text-align: center;
-    border-top: 1px solid var(--line);
-  }
-
-  /* ---- Tab Thống kê ---- */
-  .stats-pad { padding: 16px; }
-  .kpi-row { display: flex; gap: 10px; margin-bottom: 18px; }
-  .kpi {
-    flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 4px;
-    padding: 12px 10px; text-align: center;
-  }
-  .kpi .num { font-family: var(--mono); font-size: 24px; font-weight: 700; color: var(--petrol-900); }
-  .kpi .lbl { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
-  .chart-block { margin-bottom: 26px; }
-  .chart-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 10px; }
-  .chart-wrap { background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 14px 10px; height: 190px; }
+  footer { padding: 16px 20px calc(env(safe-area-inset-bottom,0px) + 16px); font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); text-align: center; border-top: 1px solid var(--line); }
+  footer span { text-decoration: underline; cursor: pointer; }
 </style>
 </head>
 <body>
 
 <header>
   <div class="head-row">
-    <div class="brand">
+    <div class="brand" onclick="veTrangChu()">
       <span class="brand-mark">PVT/</span>
       <h1>Điều Phối</h1>
     </div>
-    <div class="conn"><span class="status-dot" id="statusDot"></span><span id="statusText">Đang tải…</span></div>
-  </div>
-
-  <button id="installBtn">⬇ Cài vào màn hình chính</button>
-
-  <div class="tabs">
-    <div class="tab active" data-tab="kenhmoi">Kênh mới <span class="count" id="countKenhMoi"></span></div>
-    <div class="tab" data-tab="pakh">PAKH <span class="count" id="countPakh"></span></div>
-    <div class="tab" data-tab="thongke">Thống kê</div>
+    <div class="who" id="whoBox"></div>
   </div>
 </header>
 
-<main id="list"></main>
-
-<footer id="footerNote">Kết nối dữ liệu thật · Chỉ xem, thao tác vẫn qua Telegram</footer>
+<main id="main"></main>
+<footer id="footerNote"></footer>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -160,274 +124,503 @@
   // CẤU HÌNH KẾT NỐI — Sơn dán URL Web App + Key vào đây sau khi deploy
   // ============================================================
   const API_CONFIG = {
-    url: 'https://script.google.com/macros/s/AKfycbxhwStVgHoTat7MxIh0yf-KUtORWlKpC8RFkspyfYPDvkvdD7m9MGstVIJvNXTdSrUU-Q/exec',   // VD: https://script.google.com/macros/s/AKfycb.../exec
+      url: 'https://script.google.com/macros/s/AKfycbxhwStVgHoTat7MxIh0yf-KUtORWlKpC8RFkspyfYPDvkvdD7m9MGstVIJvNXTdSrUU-Q/exec',   // VD: https://script.google.com/macros/s/AKfycb.../exec
     key: 'pvt20262k9'    // đúng giá trị đã điền ở dòng PWA_API_KEY trong sheet Config
   };
   const CHUA_CAU_HINH = API_CONFIG.url.indexOf('DÁN_URL') === 0;
 
-  let activeTab = 'kenhmoi';
-  let openId = null;
-  let liveData = { kenhmoi: [], pakh: [] };
-  let liveStats = null;
-  let charts = {};
+  let nguoi = null;       // { ten, code, chatId, vaiTro, khuVuc, doiTac }
+  let view = 'login';     // 'login' | 'home' | 'newRequest' | 'detail'
+  let queueData = [];
+  let detailItem = null;
+  let anhDangCho = {};    // lưu tạm URL ảnh đã upload cho form nghiệm thu, trước khi Gửi
 
-  // ==== Dữ liệu mẫu — chỉ dùng khi CHƯA cấu hình API (để xem trước giao diện) ====
-  const DEMO_DATA = {
-    kenhmoi: [
-      { id: 'New260828-0912-tranVanC', ten: 'Trần Văn C', xa: 'Xã Mỹ Phong', kenh: 'GPON Mobi', trangThai: 'Chờ QLKV chốt kết quả', urgency: 'overdue', elapsedMin: 52, nguoiCho: 'QLKV', doiTac: 'HPT' },
-      { id: 'New260828-1030-leThiD',   ten: 'Lê Thị D',   xa: 'Phường 1',     kenh: 'Toàn trình', trangThai: 'Chờ ĐT khảo sát', urgency: 'doing', elapsedMin: 18, nguoiCho: 'HPT', doiTac: 'HPT' }
-    ],
-    pakh: [
-      { id: 'PAKH260828-0845-nguyenVanA', ten: 'Nguyễn Văn A', maKenh: '0059181977', loi: 'Không vô mạng được', trangThai: 'Chờ ĐT khắc phục', urgency: 'overdue', elapsedMin: 135, nguoiCho: 'TMC', doiTac: 'TMC' }
-    ]
-  };
-  const DEMO_STATS = {
-    tongDangXuLy: 3, soKenhMoi: 2, soPAKH: 1,
-    theoKhan: { wait: 0, doing: 1, overdue: 2 },
-    theoDoiTac: { HPT: 2, TMC: 1 },
-    hoanThanh7Ngay: { '05/09':1,'06/09':2,'07/09':0,'08/09':3,'09/09':1,'10/09':2,'11/09':1 }
-  };
+  const $ = (sel) => document.querySelector(sel);
+  const main = () => document.getElementById('main');
+
+  function showToast(msg, err) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show' + (err ? ' err' : '');
+    setTimeout(() => el.classList.remove('show'), 2800);
+  }
 
   function fmtElapsed(min) {
     if (min === null || min === undefined) return '—';
     if (min < 60) return min + 'p';
     return Math.floor(min / 60) + 'h' + (min % 60) + 'p';
   }
-  function urgencyLabel(u) {
-    return { wait: 'Bình thường', doing: 'Đang xử lý', overdue: 'Quá hạn', done: 'Hoàn tất' }[u] || '';
+
+  /* ==================== GỌI API ==================== */
+  async function apiGet(action, extraParams) {
+    const params = new URLSearchParams(Object.assign({ action, key: API_CONFIG.key }, extraParams || {}));
+    const res = await fetch(API_CONFIG.url + '?' + params.toString());
+    return res.json();
   }
-
-  function renderKenhMoi(item) {
-    return `
-      <div class="ticket">
-        <div class="rail ${item.urgency}"></div>
-        <div style="flex:1">
-          <div class="ticket-body" onclick="toggle('${item.id}')">
-            <div class="ticket-top">
-              <span class="ticket-id">${item.id}</span>
-              <span class="elapsed ${item.urgency}">${fmtElapsed(item.elapsedMin)} · chờ ${item.nguoiCho || '—'}</span>
-            </div>
-            <div class="cust">${item.ten || '(chưa rõ)'}</div>
-            <div class="subline">${item.xa || ''} · ${item.kenh || ''} · ${item.trangThai || ''}</div>
-          </div>
-          <div class="detail ${openId === item.id ? 'open' : ''}" id="d-${item.id}">
-            <div class="detail-grid">
-              <div><b>Đối tác:</b> ${item.doiTac || '—'}</div>
-              <div><b>Trạng thái:</b> ${item.trangThai || ''} (${urgencyLabel(item.urgency)})</div>
-            </div>
-            <button class="action-btn" onclick="event.stopPropagation(); act()">Xem chi tiết trên Telegram</button>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  function renderPakh(item) {
-    return `
-      <div class="ticket">
-        <div class="rail ${item.urgency}"></div>
-        <div style="flex:1">
-          <div class="ticket-body" onclick="toggle('${item.id}')">
-            <div class="ticket-top">
-              <span class="ticket-id">${item.id}</span>
-              <span class="elapsed ${item.urgency}">${fmtElapsed(item.elapsedMin)} · chờ ${item.nguoiCho || '—'}</span>
-            </div>
-            <div class="cust">${item.ten || '(chưa rõ)'}</div>
-            <div class="subline">Mã kênh ${item.maKenh || '—'} · ${item.loi || ''}</div>
-          </div>
-          <div class="detail ${openId === item.id ? 'open' : ''}" id="d-${item.id}">
-            <div class="detail-grid">
-              <div><b>Đối tác:</b> ${item.doiTac || '—'}</div>
-              <div><b>Trạng thái:</b> ${item.trangThai || ''} (${urgencyLabel(item.urgency)})</div>
-            </div>
-            <button class="action-btn" onclick="event.stopPropagation(); act()">Xem chi tiết trên Telegram</button>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  function renderList() {
-    const list = document.getElementById('list');
-    const items = liveData[activeTab] || [];
-    document.getElementById('countKenhMoi').textContent = '(' + (liveData.kenhmoi || []).length + ')';
-    document.getElementById('countPakh').textContent = '(' + (liveData.pakh || []).length + ')';
-
-    if (!items.length) {
-      list.innerHTML = '<div class="empty">Không có việc nào đang chờ 🎉</div>';
-      return;
-    }
-    list.innerHTML = items.map(activeTab === 'kenhmoi' ? renderKenhMoi : renderPakh).join('');
-  }
-
-  function renderStats() {
-    const list = document.getElementById('list');
-    const s = liveStats || DEMO_STATS;
-    list.innerHTML = `
-      <div class="stats-pad">
-        <div class="kpi-row">
-          <div class="kpi"><div class="num">${s.tongDangXuLy}</div><div class="lbl">Đang xử lý</div></div>
-          <div class="kpi"><div class="num">${s.soKenhMoi}</div><div class="lbl">Kênh mới</div></div>
-          <div class="kpi"><div class="num">${s.soPAKH}</div><div class="lbl">PAKH</div></div>
-        </div>
-
-        <div class="chart-block">
-          <div class="chart-title">Theo mức độ khẩn cấp</div>
-          <div class="chart-wrap"><canvas id="chartKhan"></canvas></div>
-        </div>
-
-        <div class="chart-block">
-          <div class="chart-title">Theo đối tác đang phụ trách</div>
-          <div class="chart-wrap"><canvas id="chartDoiTac"></canvas></div>
-        </div>
-
-        <div class="chart-block">
-          <div class="chart-title">Kênh mới hoàn tất — 7 ngày gần nhất</div>
-          <div class="chart-wrap"><canvas id="chart7Ngay"></canvas></div>
-        </div>
-      </div>`;
-    drawCharts(s);
-  }
-
-  function destroyCharts() {
-    Object.values(charts).forEach(c => c && c.destroy());
-    charts = {};
-  }
-
-  function drawCharts(s) {
-    destroyCharts();
-    if (typeof Chart === 'undefined') return; // Chart.js chưa tải kịp (offline lần đầu) -> bỏ qua, không lỗi
-
-    const palette = { wait: '#1B5556', doing: '#E8A33D', overdue: '#B23A2E' };
-    charts.khan = new Chart(document.getElementById('chartKhan'), {
-      type: 'doughnut',
-      data: {
-        labels: ['Bình thường', 'Đang xử lý', 'Quá hạn'],
-        datasets: [{ data: [s.theoKhan.wait||0, s.theoKhan.doing||0, s.theoKhan.overdue||0],
-          backgroundColor: [palette.wait, palette.doing, palette.overdue], borderWidth: 0 }]
-      },
-      options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } }, maintainAspectRatio: false }
+  async function apiPost(endpoint, extra) {
+    const body = Object.assign({ pwaAction: true, endpoint, code: nguoi ? nguoi.code : null }, extra || {});
+    const res = await fetch(API_CONFIG.url, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body)
     });
-
-    const dtLabels = Object.keys(s.theoDoiTac || {});
-    charts.doiTac = new Chart(document.getElementById('chartDoiTac'), {
-      type: 'bar',
-      data: { labels: dtLabels, datasets: [{ data: dtLabels.map(k => s.theoDoiTac[k]), backgroundColor: '#0E3B3C', borderRadius: 3 }] },
-      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: false }
-    });
-
-    const ngayLabels = Object.keys(s.hoanThanh7Ngay || {});
-    charts.ngay = new Chart(document.getElementById('chart7Ngay'), {
-      type: 'bar',
-      data: { labels: ngayLabels, datasets: [{ data: ngayLabels.map(k => s.hoanThanh7Ngay[k]), backgroundColor: '#E8A33D', borderRadius: 3 }] },
-      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: false }
-    });
+    return res.json();
   }
 
-  function render() {
-    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
-    if (activeTab === 'thongke') renderStats();
-    else renderList();
-  }
-
-  function toggle(id) {
-    openId = openId === id ? null : id;
-    renderList();
-  }
-
-  function act() {
-    showToast('Mở Telegram để thao tác thật — PWA hiện chỉ để xem tình hình nhanh');
-  }
-
-  document.querySelectorAll('.tab').forEach(t => {
-    t.addEventListener('click', () => { activeTab = t.dataset.tab; openId = null; render(); });
-  });
-
-  function showToast(msg) {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 2600);
-  }
-
-  // ==== Lấy dữ liệu thật từ Apps Script Web App (kèm cache tạm để dùng khi mất mạng) ====
-  async function taiDuLieu() {
+  /* ==================== ĐĂNG NHẬP ==================== */
+  function renderLogin() {
+    document.getElementById('whoBox').textContent = '';
+    document.getElementById('footerNote').textContent = '';
     if (CHUA_CAU_HINH) {
-      liveData = DEMO_DATA; liveStats = DEMO_STATS;
-      document.getElementById('footerNote').textContent = 'Chưa cấu hình API — đang hiện dữ liệu mẫu';
-      showConfigWarning();
-      render();
-      updateConn('demo');
+      main().innerHTML = `<div class="login-wrap"><h2>Chưa cấu hình API</h2>
+        <p>Sơn cần dán URL Web App + Key vào phần <code>API_CONFIG</code> đầu file index.html trước khi dùng.</p></div>`;
       return;
     }
-    try {
-      const [resActive, resStats] = await Promise.all([
-        fetch(API_CONFIG.url + '?action=active&key=' + encodeURIComponent(API_CONFIG.key)),
-        fetch(API_CONFIG.url + '?action=summary&key=' + encodeURIComponent(API_CONFIG.key))
-      ]);
-      const active = await resActive.json();
-      const stats = await resStats.json();
-      if (active.error || stats.error) throw new Error(active.error || stats.error);
+    main().innerHTML = `
+      <div class="login-wrap">
+        <h2>Đăng nhập</h2>
+        <p>Nhập mã truy cập được cấp để vào hệ thống</p>
+        <input type="text" id="loginCode" placeholder="Mã truy cập" autocomplete="off" style="text-align:center;font-size:18px;letter-spacing:2px">
+        <button class="btn btn-primary" onclick="thucHienDangNhap()">Đăng nhập</button>
+      </div>`;
+    document.getElementById('loginCode').addEventListener('keydown', e => { if (e.key === 'Enter') thucHienDangNhap(); });
+  }
 
-      liveData = active; liveStats = stats;
-      localStorage.setItem('dieuphoi_cache', JSON.stringify({ active, stats, luc: Date.now() }));
-      updateConn('online');
+  async function thucHienDangNhap() {
+    const code = document.getElementById('loginCode').value.trim();
+    if (!code) return;
+    try {
+      const res = await apiGet('login', { code });
+      if (!res.ok) { showToast(res.error || 'Sai mã truy cập', true); return; }
+      nguoi = res.nguoi;
+      localStorage.setItem('dieuphoi_code', code);
+      view = 'home';
+      render();
     } catch (err) {
-      const cached = localStorage.getItem('dieuphoi_cache');
-      if (cached) {
-        const c = JSON.parse(cached);
-        liveData = c.active; liveStats = c.stats;
-        updateConn('stale', c.luc);
+      showToast('Không kết nối được, thử lại', true);
+    }
+  }
+
+  function dangXuat() {
+    localStorage.removeItem('dieuphoi_code');
+    nguoi = null; view = 'login'; render();
+  }
+
+  function veTrangChu() { if (nguoi) { view = 'home'; render(); } }
+
+  /* ==================== TRANG CHỦ (hàng chờ) ==================== */
+  async function renderHome() {
+    document.getElementById('whoBox').innerHTML = `<b>${nguoi.ten}</b> (${nguoi.vaiTro}) · <span style="text-decoration:underline;cursor:pointer" onclick="dangXuat()">Đăng xuất</span>`;
+    document.getElementById('footerNote').textContent = 'Đang tải…';
+    main().innerHTML = `<div class="pad"></div>`;
+
+    try {
+      const res = await apiGet('myqueue', { code: nguoi.code });
+      if (res.error) { showToast(res.error, true); return; }
+      queueData = res.ds || [];
+      document.getElementById('footerNote').textContent = 'Đã cập nhật · ' + new Date().toLocaleTimeString('vi-VN');
+    } catch (err) {
+      showToast('Không tải được danh sách', true);
+      document.getElementById('footerNote').textContent = 'Không kết nối được';
+    }
+
+    let html = '';
+    if (nguoi.vaiTro === 'KD' || nguoi.vaiTro === 'ADMIN') {
+      html += `<div class="pad" style="padding-bottom:0"><button class="btn btn-amber" onclick="moTaoYeuCau()">➕ Tạo yêu cầu mới</button></div>`;
+    }
+    if (!queueData.length) {
+      html += `<div class="empty">Không có việc nào trong hàng chờ 🎉</div>`;
+    } else {
+      html += queueData.map(renderDongDanhSach).join('');
+    }
+    main().innerHTML = html;
+  }
+
+  function renderDongDanhSach(item) {
+    const xong = !item.dangChoToi;
+    return `
+      <div class="ticket" onclick="moChiTiet('${item.id}')">
+        <div class="rail ${xong ? '' : item.urgency}"></div>
+        <div class="ticket-body">
+          <div class="ticket-top">
+            <span class="ticket-id">${item.id}</span>
+            ${xong ? '' : `<span class="elapsed ${item.urgency}">${fmtElapsed(item.elapsedMin)}</span>`}
+          </div>
+          <div class="cust">${item.ten || '(chưa rõ)'}</div>
+          <div class="subline">${item.xa || ''} ${item.kenh ? '· ' + item.kenh : ''}</div>
+          <div class="subline">${item.trangThai || ''}</div>
+          ${xong ? '<span class="badge-done">✓ Đã xong</span>' : ''}
+        </div>
+      </div>`;
+  }
+
+  /* ==================== TẠO YÊU CẦU MỚI ==================== */
+  function moTaoYeuCau() { view = 'newRequest'; render(); }
+
+  function renderNewRequest() {
+    document.getElementById('footerNote').textContent = '';
+    main().innerHTML = `
+      <div class="back-row" onclick="veTrangChu()">← Quay lại</div>
+      <div class="step-box">
+        <div class="step-title">Tạo yêu cầu mới</div>
+        <label class="req">Tên KH</label><input type="text" id="f_ten">
+        <label class="req">Số ĐT</label><input type="tel" id="f_sdt">
+        <label class="req">Vị trí (lat, long)</label>
+        <div class="btn-row">
+          <input type="text" id="f_viTri" placeholder="VD: 10.36,106.37" style="flex:1">
+          <button class="btn btn-outline" style="width:auto;white-space:nowrap;padding:0 14px" onclick="layViTriGPS()">📍 GPS</button>
+        </div>
+        <label>Số nhà, tên đường</label><input type="text" id="f_soNha">
+        <label class="req">Xã, Phường</label><input type="text" id="f_xa" placeholder='VD: "Xã Mỹ Phong"'>
+        <div class="hint">Bắt buộc có chữ "Xã" hoặc "Phường" phía trước tên.</div>
+        <button class="btn btn-primary" onclick="guiTaoYeuCau(this)">Tạo yêu cầu</button>
+      </div>`;
+  }
+
+  function layViTriGPS() {
+    if (!navigator.geolocation) { showToast('Trình duyệt không hỗ trợ định vị', true); return; }
+    showToast('Đang lấy vị trí…');
+    navigator.geolocation.getCurrentPosition(
+      pos => { document.getElementById('f_viTri').value = pos.coords.latitude.toFixed(6) + ',' + pos.coords.longitude.toFixed(6); },
+      () => showToast('Không lấy được vị trí, nhập tay', true)
+    );
+  }
+
+  async function guiTaoYeuCau(btn) {
+    const ten = $('#f_ten').value.trim(), sdt = $('#f_sdt').value.trim(), viTri = $('#f_viTri').value.trim();
+    const soNha = $('#f_soNha').value.trim(), xa = $('#f_xa').value.trim();
+    if (!ten || !sdt || !viTri || !xa) { showToast('Thiếu thông tin bắt buộc', true); return; }
+    const parts = viTri.split(',').map(s => s.trim());
+    if (parts.length !== 2 || isNaN(parseFloat(parts[0])) || isNaN(parseFloat(parts[1]))) {
+      showToast('Vị trí không hợp lệ, VD: 10.36,106.37', true); return;
+    }
+    btn.disabled = true; btn.textContent = 'Đang tạo…';
+    try {
+      const res = await apiPost('taoYeuCauMoi', { data: { ten, sdt, lat: parts[0], lng: parts[1], soNhaTenDuong: soNha, xa } });
+      if (res.ok) {
+        showToast('✅ Đã tạo yêu cầu ' + res.id);
+        view = 'home'; render();
       } else {
-        updateConn('off');
+        showToast(res.error || 'Có lỗi xảy ra', true);
+        btn.disabled = false; btn.textContent = 'Tạo yêu cầu';
       }
+    } catch (err) {
+      showToast('Không kết nối được', true);
+      btn.disabled = false; btn.textContent = 'Tạo yêu cầu';
+    }
+  }
+
+  /* ==================== CHI TIẾT 1 YÊU CẦU + HÀNH ĐỘNG THEO BƯỚC ==================== */
+  async function moChiTiet(id) {
+    view = 'detail';
+    detailItem = queueData.find(x => x.id === id) || { id };
+    anhDangCho = {};
+    render();
+    try {
+      const res = await apiGet('detail', { id });
+      if (res.req) { detailItem = Object.assign({}, detailItem, res.req, { id }); renderDetailBody(); }
+    } catch (err) { /* giữ dữ liệu rút gọn đã có nếu tải chi tiết lỗi */ }
+  }
+
+  function renderDetail() {
+    document.getElementById('footerNote').textContent = '';
+    main().innerHTML = `<div class="back-row" onclick="veTrangChu()">← Quay lại</div><div id="detailBody"></div>`;
+    renderDetailBody();
+  }
+
+  function renderDetailBody() {
+    const box = document.getElementById('detailBody');
+    if (!box) return;
+    const d = detailItem;
+    box.innerHTML = `
+      <div class="detail-card">
+        <div class="row"><b>Mã YC:</b> ${d.id}</div>
+        <div class="row"><b>KH:</b> ${d.TenKH || d.ten || ''} ${d.SoDT_KH ? '— ' + d.SoDT_KH : ''}</div>
+        <div class="row"><b>Địa chỉ:</b> ${d.DiaChiDayDu || d.xa || ''}</div>
+        <div class="row"><b>Khu vực:</b> ${d.KhuVuc || ''} ${d.DoiTac ? '(' + d.DoiTac + ')' : ''}</div>
+        <div class="row"><b>Loại kênh:</b> ${d.LoaiKenh || d.kenh || '(chưa chọn)'}</div>
+        <div class="row"><b>Trạng thái:</b> ${MO_TA_TT_CLIENT[d.TrangThai] || d.trangThai || d.TrangThai || ''}</div>
+      </div>
+      <div id="stepArea"></div>`;
+    renderBuocHanhDong(d.TrangThai || d.trangThaiRaw);
+  }
+
+  // Mô tả trạng thái phía client (chỉ để hiển thị đẹp — không phải nguồn xử lý logic)
+  const MO_TA_TT_CLIENT = {
+    'CHO_XAC_NHAN_XA': 'Chờ xác nhận Xã/Khu vực', 'CHO_CHON_KENH': 'Chờ chọn loại kênh',
+    'CHO_DT_TRA_LOI': 'Chờ Đối tác trả lời', 'CHO_QLKV_CHOT': 'Chờ QLKV chốt kết quả',
+    'CHO_GOICUOC_TOANTRINH': 'Chờ nhập Gói cước', 'CHO_BAO_NET': 'Chờ báo ĐT khai báo Net',
+    'CHO_PORT_INFO': 'Chờ nhập thông tin Port', 'CHO_KHAI_BAO_NET': 'Chờ khai báo Net xong',
+    'CHO_DT_HOAN_THANH': 'Chờ ĐT hoàn thành', 'CHO_KD_KY_HD': 'Chờ KD ký HĐ với KH',
+    'CHO_KD_GUI_TTKH': 'Chờ KD gửi thông tin kênh', 'CHO_QLKV_GUI_DT': 'Chờ QLKV chuyển ĐT',
+    'CHO_DT_TIEPNHAN_CAUHINH': 'Chờ ĐT tiếp nhận cấu hình', 'CHO_DT_NGHIEMTHU': 'Chờ ĐT nghiệm thu',
+    'CHO_QLKV_XEM_NGHIEMTHU': 'Chờ QLKV xét duyệt nghiệm thu', 'CHO_QLKV_NGHIEMTHU_WEBTCT': 'Chờ QLKV nghiệm thu Web TCT',
+    'CHO_KD_GOI_KH': 'Chờ KD gọi báo KH', 'HOAN_TAT': '✅ Hoàn tất',
+    'KET_THUC_KHONG_DAP_UNG': 'Kết thúc — không đáp ứng', 'KET_THUC_KH_KHONG_KY_HD': 'Kết thúc — KH không ký HĐ', 'DA_HUY': 'Đã huỷ'
+  };
+
+  function renderBuocHanhDong(trangThai) {
+    const box = document.getElementById('stepArea');
+    if (!box) return;
+    const b = BUOC_UI[trangThai];
+    if (!b) { box.innerHTML = ''; return; } // trạng thái kết thúc hoặc không có hành động web -> không hiện gì
+    box.innerHTML = b.html(detailItem);
+    if (b.sauKhiRender) b.sauKhiRender(detailItem);
+  }
+
+  /** Gọi 1 hành động đơn giản (button, không cần nhập liệu) */
+  async function goiHanhDong(action, data, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = 'Đang xử lý…'; }
+    try {
+      const res = await apiPost('hanhDong', { loai: 'kenhmoi', id: detailItem.id, action, data: data || null });
+      if (res.ok) { showToast('✅ Đã xử lý'); veTrangChu(); }
+      else { showToast(res.error || 'Có lỗi xảy ra', true); if (btn) { btn.disabled = false; renderDetailBody(); } }
+    } catch (err) { showToast('Không kết nối được', true); if (btn) { btn.disabled = false; renderDetailBody(); } }
+  }
+
+  /* ---- Cấu hình giao diện cho từng bước (data-driven) ---- */
+  const BUOC_UI = {
+    'CHO_XAC_NHAN_XA': { html: () => `
+      <div class="step-box">
+        <div class="step-title">Xác nhận Xã/Khu vực</div>
+        <div class="step-sub">Xã dự đoán: <b>${detailItem.Xa_DuDoan || ''}</b></div>
+        <button class="btn btn-primary" onclick="goiHanhDong('xa_ok', null, this)">✅ Tiếp nhận (đúng)</button>
+        <label>Hoặc sửa lại Xã/Phường đúng</label>
+        <input type="text" id="in_xaMoi" placeholder='VD: "Xã Mỹ Phong"'>
+        <button class="btn btn-outline" onclick="goiHanhDong('xa_sua', {xaMoi: $('#in_xaMoi').value.trim()}, this)">Gửi Xã đã sửa</button>
+      </div>` },
+
+    'CHO_CHON_KENH': { html: () => `
+      <div class="step-box">
+        <div class="step-title">Chọn loại kênh</div>
+        <button class="btn btn-primary" onclick="goiHanhDong('kenh_toantrinh', null, this)">Toàn trình</button>
+        <button class="btn btn-amber" onclick="goiHanhDong('kenh_gpon', null, this)">GPON Mobi</button>
+      </div>` },
+
+    'CHO_DT_TRA_LOI': { html: () => `
+      <div class="step-box">
+        <div class="step-title">Đối tác trả lời khảo sát</div>
+        <button class="btn btn-primary" onclick="goiHanhDong('dt_ok', null, this)">✅ Đáp ứng</button>
+        <label>Không đáp ứng — lý do</label>
+        <textarea id="in_lyDo1"></textarea>
+        <button class="btn btn-danger" onclick="goiHanhDong('dt_no', {lyDo: $('#in_lyDo1').value.trim()}, this)">❌ Không đáp ứng</button>
+      </div>` },
+
+    'CHO_QLKV_CHOT': { html: () => `
+      <div class="step-box">
+        <div class="step-title">QLKV chốt kết quả cuối</div>
+        <button class="btn btn-primary" onclick="goiHanhDong('qlkv_chot_ok', null, this)">✅ Chốt Đáp ứng</button>
+        <label>Chốt Không đáp ứng — lý do</label>
+        <textarea id="in_lyDo2"></textarea>
+        <button class="btn btn-danger" onclick="goiHanhDong('qlkv_chot_no', {lyDo: $('#in_lyDo2').value.trim()}, this)">❌ Chốt Không đáp ứng</button>
+      </div>` },
+
+    'CHO_GOICUOC_TOANTRINH': { html: () => `
+      <div class="step-box">
+        <div class="step-title">Nhập Gói cước (Toàn trình)</div>
+        <label class="req">Gói cước</label><input type="text" id="in_goiCuoc">
+        <button class="btn btn-primary" onclick="goiHanhDong('goicuoc_toantrinh', {goiCuoc: $('#in_goiCuoc').value.trim()}, this)">Gửi</button>
+      </div>` },
+
+    'CHO_BAO_NET': { html: () => `
+      <div class="step-box"><div class="step-title">Báo Đối tác khai báo Net</div>
+        <button class="btn btn-primary" onclick="goiHanhDong('net_daobao', null, this)">✅ Đã báo ĐT</button></div>` },
+
+    'CHO_PORT_INFO': { html: () => `
+      <div class="step-box">
+        <div class="step-title">Thông tin đấu nối Port</div>
+        <label class="req">CSG</label><input type="text" id="in_csg">
+        <label class="req">Port</label><input type="text" id="in_port">
+        <button class="btn btn-primary" onclick="goiHanhDong('port_info', {csg: $('#in_csg').value.trim(), port: $('#in_port').value.trim()}, this)">Gửi</button>
+      </div>` },
+
+    'CHO_KHAI_BAO_NET': { html: () => `
+      <div class="step-box"><div class="step-title">Khai báo Net</div>
+        <button class="btn btn-primary" onclick="goiHanhDong('net_daxong', null, this)">✅ Net đã xong</button></div>` },
+
+    'CHO_DT_HOAN_THANH': { html: () => `
+      <div class="step-box"><div class="step-title">Hoàn thành (Toàn trình)</div>
+        <button class="btn btn-primary" onclick="goiHanhDong('dt_hoanthanh_toantrinh', null, this)">✅ Hoàn thành</button></div>` },
+
+    'CHO_KD_KY_HD': { html: () => `
+      <div class="step-box">
+        <div class="step-title">Ký hợp đồng với KH</div>
+        <button class="btn btn-primary" onclick="goiHanhDong('kd_tiepnhan_hd', null, this)">✅ Đã ký HĐ</button>
+        <label>KH không đồng ý ký — lý do</label>
+        <textarea id="in_lyDo3"></textarea>
+        <button class="btn btn-danger" onclick="goiHanhDong('kd_khky_hd', {lyDo: $('#in_lyDo3').value.trim()}, this)">❌ KH không ký</button>
+      </div>` },
+
+    'CHO_KD_GUI_TTKH': { html: () => `
+      <div class="step-box">
+        <div class="step-title">Thông tin kênh (TTKH)</div>
+        <label class="req">Mã kênh (10 chữ số)</label><input type="text" id="in_maKenh" inputmode="numeric">
+        <label class="req">Account (chữ + 10 số)</label><input type="text" id="in_account">
+        <label class="req">Gói cước</label><input type="text" id="in_goiCuoc2">
+        <button class="btn btn-primary" onclick="goiHanhDong('ttkh', {maKenh: $('#in_maKenh').value.trim(), account: $('#in_account').value.trim(), goiCuoc: $('#in_goiCuoc2').value.trim()}, this)">Gửi</button>
+      </div>` },
+
+    'CHO_QLKV_GUI_DT': { html: () => `
+      <div class="step-box"><div class="step-title">Chuyển cấu hình cho ĐT</div>
+        <button class="btn btn-primary" onclick="goiHanhDong('qlkv_tiepnhan_guidt', null, this)">✅ Chuyển ĐT</button></div>` },
+
+    'CHO_DT_TIEPNHAN_CAUHINH': { html: () => `
+      <div class="step-box"><div class="step-title">Tiếp nhận cấu hình</div>
+        <button class="btn btn-primary" onclick="goiHanhDong('dt_tiepnhan_cauhinh', null, this)">✅ Tiếp nhận</button></div>` },
+
+    'CHO_DT_NGHIEMTHU': { html: () => renderFormNghiemThu() },
+
+    'CHO_QLKV_XEM_NGHIEMTHU': { html: () => `
+      <div class="step-box">
+        <div class="step-title">Xét duyệt nghiệm thu</div>
+        ${anhPreviewRow(detailItem.NT_AnhBB_FileId, 'Biên bản')}
+        ${anhPreviewRow(detailItem.NT_AnhSpeedtest_FileId, 'Speedtest')}
+        ${anhPreviewRow(detailItem.NT_AnhSerial_FileId, 'Tem serial')}
+        ${anhPreviewRow(detailItem.NT_AnhModem_FileId, 'Lắp đặt')}
+        <div class="hint" style="margin-top:10px">OLT: ${detailItem.NT_OLT||''} · AP2: ${detailItem.NT_AP2||''} · Serial: ${detailItem.NT_SerialModem||''}</div>
+        <button class="btn btn-primary" onclick="goiHanhDong('qlkv_thongnhat', null, this)">✅ Thống nhất</button>
+        <button class="btn btn-danger" onclick="goiHanhDong('qlkv_khongthongnhat', null, this)">❌ Không thống nhất</button>
+      </div>` },
+
+    'CHO_QLKV_NGHIEMTHU_WEBTCT': { html: () => `
+      <div class="step-box"><div class="step-title">Nghiệm thu Web TCT</div>
+        <button class="btn btn-primary" onclick="goiHanhDong('qlkv_nghiemthu_webtct', null, this)">✅ Đã nghiệm thu Web TCT</button></div>` },
+
+    'CHO_KD_GOI_KH': { html: () => `
+      <div class="step-box"><div class="step-title">Gọi điện báo KH</div>
+        <button class="btn btn-primary" onclick="goiHanhDong('kd_da_goi_kh', null, this)">✅ Đã gọi báo KH</button></div>` }
+  };
+
+  function anhPreviewRow(url, ten) {
+    if (!url) return '';
+    return `<div class="photo-slot"><img src="${url}"><div class="ph-info">${ten}</div></div>`;
+  }
+
+  /* ==================== FORM NGHIỆM THU (nhiều trường + 4 ảnh) ==================== */
+  const ANH_CAN_THIET = [
+    { key: 'anhBB', ten: 'Biên bản nghiệm thu' }, { key: 'anhSpeedtest', ten: 'Speedtest' },
+    { key: 'anhSerial', ten: 'Tem serial modem' }, { key: 'anhLapDat', ten: 'Hình ảnh lắp đặt' }
+  ];
+
+  function renderFormNghiemThu() {
+    const anhRows = ANH_CAN_THIET.map(a => `
+      <div class="photo-slot" id="slot_${a.key}">
+        ${anhDangCho[a.key] ? `<img src="${anhDangCho[a.key]}">` : ''}
+        <div class="ph-info">${a.ten}<div class="ph-status ${anhDangCho[a.key] ? 'done' : ''}">${anhDangCho[a.key] ? '✓ Đã chọn' : 'Chưa chọn ảnh'}</div></div>
+        <button onclick="document.getElementById('file_${a.key}').click()">${anhDangCho[a.key] ? 'Đổi ảnh' : 'Chọn ảnh'}</button>
+        <input type="file" accept="image/*" capture="environment" id="file_${a.key}" style="display:none" onchange="chonVaUploadAnh('${a.key}', this)">
+      </div>`).join('');
+
+    return `
+      <div class="step-box">
+        <div class="step-title">Nghiệm thu lắp đặt</div>
+        <label class="req">OLT (6 ký tự)</label><input type="text" id="in_olt">
+        <label class="req">AP2 (dạng AP2-x-y)</label><input type="text" id="in_ap2">
+        <label class="req">Nhãn hiệu Modem</label><input type="text" id="in_nhanHieu">
+        <label class="req">Serial Modem</label><input type="text" id="in_serial">
+        <div class="hint">Dùng đúng Serial còn trống trong kho — hỏi Khang/QLKV nếu chưa rõ.</div>
+        <label class="req">Tình trạng modem</label>
+        <select id="in_tinhTrang"><option value="">— Chọn —</option><option value="mới">Mới</option><option value="cũ">Cũ</option></select>
+        <label class="req">Loại cáp</label>
+        <select id="in_loaiCap"><option value="">— Chọn —</option><option value="1fo">1fo</option><option value="2fo">2fo</option></select>
+        <label class="req">Chiều dài cáp thi công (m)</label><input type="number" id="in_capThiCong">
+        <label>Vật tư khác</label><input type="text" id="in_vatTuKhac">
+
+        <label class="req" style="margin-top:18px">Ảnh nghiệm thu (đủ 4 ảnh)</label>
+        ${anhRows}
+
+        <button class="btn btn-primary" onclick="guiNghiemThu(this)">Gửi nghiệm thu</button>
+      </div>`;
+  }
+
+  /** Nén ảnh phía client trước khi upload (giới hạn cạnh dài nhất 1400px, JPEG chất lượng 0.75) để nhẹ, nhanh */
+  function nenAnh(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = e => { img.onload = () => {
+        const MAX = 1400;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) { if (w > h) { h = Math.round(h * MAX / w); w = MAX; } else { w = Math.round(w * MAX / h); h = MAX; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
+      }; img.onerror = reject; img.src = e.target.result; };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function chonVaUploadAnh(key, inputEl) {
+    const file = inputEl.files[0];
+    if (!file) return;
+    const slot = document.getElementById('slot_' + key);
+    slot.querySelector('.ph-status').textContent = 'Đang tải lên…';
+    try {
+      const base64 = await nenAnh(file);
+      const res = await apiPost('uploadAnh', { anhBase64: base64 });
+      if (res.ok) {
+        anhDangCho[key] = res.url;
+        renderDetailBody();
+        showToast('✅ Đã tải ảnh lên');
+      } else {
+        showToast(res.error || 'Tải ảnh thất bại', true);
+        slot.querySelector('.ph-status').textContent = 'Chưa chọn ảnh';
+      }
+    } catch (err) {
+      showToast('Tải ảnh thất bại, thử lại', true);
+      slot.querySelector('.ph-status').textContent = 'Chưa chọn ảnh';
+    }
+  }
+
+  async function guiNghiemThu(btn) {
+    const data = {
+      olt: $('#in_olt').value.trim(), ap2: $('#in_ap2').value.trim(),
+      nhanHieu: $('#in_nhanHieu').value.trim(), serial: $('#in_serial').value.trim(),
+      tinhTrang: $('#in_tinhTrang').value, loaiCap: $('#in_loaiCap').value,
+      capThiCong: $('#in_capThiCong').value.trim(), vatTuKhac: $('#in_vatTuKhac').value.trim(),
+      anhBB: anhDangCho.anhBB, anhSpeedtest: anhDangCho.anhSpeedtest,
+      anhSerial: anhDangCho.anhSerial, anhLapDat: anhDangCho.anhLapDat
+    };
+    if (!data.olt || !data.ap2 || !data.nhanHieu || !data.serial || !data.tinhTrang || !data.loaiCap || !data.capThiCong) {
+      showToast('Thiếu thông tin bắt buộc', true); return;
+    }
+    if (!data.anhBB || !data.anhSpeedtest || !data.anhSerial || !data.anhLapDat) {
+      showToast('Cần đủ 4 ảnh trước khi gửi', true); return;
+    }
+    btn.disabled = true; btn.textContent = 'Đang gửi…';
+    try {
+      const res = await apiPost('nghiemThu', { id: detailItem.id, data });
+      if (res.ok) { showToast('✅ Đã gửi nghiệm thu'); veTrangChu(); }
+      else { showToast(res.error || 'Có lỗi xảy ra', true); btn.disabled = false; btn.textContent = 'Gửi nghiệm thu'; }
+    } catch (err) {
+      showToast('Không kết nối được', true); btn.disabled = false; btn.textContent = 'Gửi nghiệm thu';
+    }
+  }
+
+  /* ==================== ĐIỀU HƯỚNG CHUNG ==================== */
+  function render() {
+    if (view === 'login') renderLogin();
+    else if (view === 'home') renderHome();
+    else if (view === 'newRequest') renderNewRequest();
+    else if (view === 'detail') renderDetail();
+  }
+
+  // ==== Đăng ký Service Worker + khởi động ====
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('service-worker.js').catch(() => {}); });
+  }
+
+  (async function khoiDong() {
+    if (CHUA_CAU_HINH) { render(); return; }
+    const savedCode = localStorage.getItem('dieuphoi_code');
+    if (savedCode) {
+      try {
+        const res = await apiGet('login', { code: savedCode });
+        if (res.ok) { nguoi = res.nguoi; view = 'home'; }
+      } catch (err) { /* để nguyên màn hình đăng nhập nếu lỗi */ }
     }
     render();
-  }
-
-  function showConfigWarning() {
-    const list = document.getElementById('list');
-    list.insertAdjacentHTML('afterbegin',
-      `<div class="config-warn"><b>Chưa kết nối dữ liệu thật.</b> Sơn cần dán URL Web App + Key vào phần
-      <code>API_CONFIG</code> đầu file index.html (xem hướng dẫn kèm theo). Đang hiện dữ liệu mẫu bên dưới.</div>`);
-  }
-
-  function updateConn(mode, staleTime) {
-    const dot = document.getElementById('statusDot');
-    const txt = document.getElementById('statusText');
-    dot.className = 'status-dot';
-    if (mode === 'online') { txt.textContent = 'Đã cập nhật'; }
-    else if (mode === 'demo') { dot.classList.add('stale'); txt.textContent = 'Dữ liệu mẫu'; }
-    else if (mode === 'stale') {
-      dot.classList.add('stale');
-      const mins = Math.round((Date.now() - staleTime) / 60000);
-      txt.textContent = 'Ngoại tuyến · dữ liệu ' + mins + 'p trước';
-    } else { dot.classList.add('off'); txt.textContent = 'Không tải được dữ liệu'; }
-  }
-
-  // ==== Cài đặt PWA (Add to Home Screen) ====
-  let deferredPrompt = null;
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    document.getElementById('installBtn').style.display = 'block';
-  });
-  document.getElementById('installBtn').addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    document.getElementById('installBtn').style.display = 'none';
-  });
-  window.addEventListener('appinstalled', () => showToast('Đã cài đặt ứng dụng thành công'));
-
-  // ==== Đăng ký Service Worker (chạy được cả khi mất mạng) ====
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('service-worker.js').catch(() => {});
-    });
-  }
-
-  taiDuLieu();
-  setInterval(taiDuLieu, 60000); // tự làm mới mỗi 1 phút khi app đang mở
+  })();
 </script>
 </body>
 </html>
